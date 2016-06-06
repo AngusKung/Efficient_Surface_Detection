@@ -11,7 +11,7 @@ cd build
 cmake ..
 make
 ./<EXECUTION> [options as printed]
-
+-----------------------------------------------
 
 If you use this source code, please cite the paper: "Efficient Surface Detection for Augmented Reality on 3D Point Clouds" by Yen-Cheng, Kung., Yung-Lin, Huang., Shao-Yi, Chien.
 
