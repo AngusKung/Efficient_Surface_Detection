@@ -7,14 +7,11 @@ but PCL 1.8 is recommended.
 
 ------------------ Usage: ---------------------
 mkdir build
-
 cd build
-
 cmake ..
-
 make
-
 ./EXE [options as printed]
+
 
 If you use this source code, please cite the paper: "Efficient Surface Detection for Augmented Reality on 3D Point Clouds" by Yen-Cheng, Kung., Yung-Lin, Huang., Shao-Yi, Chien.
 
