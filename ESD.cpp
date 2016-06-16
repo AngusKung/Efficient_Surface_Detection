@@ -154,8 +154,8 @@ void addSupervoxelConnectionsToViewer (PointT &supervoxel_center,
                                        boost::shared_ptr<pcl::visualization::PCLVisualizer> & viewer);
 
 void savePCDfile(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, const char* fileName);
-void findNeighbor(std::vector<uint32_t>& plane, uint32_t the_cluster_num
-                  , double the_normal_x, double the_normal_y, double the_normal_z);
+void findNeighbor(std::vector<uint32_t>& plane,const uint32_t& the_cluster_num
+                  , double& the_normal_x, double& the_normal_y, double& the_normal_z);
 void scaleAddCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr add_cloud_ptr, double plane_variance, double scale_ratio);
 size_t findProjectPoint(float x, float y, float z, pcl::PointCloud<pcl::PointXYZRGB>::Ptr augment_cloud, size_t AR_planar_label, float& new_x ,float& new_y, float& new_z);
 void replaceRGB_AR(pcl::PointCloud<pcl::PointXYZRGB>::Ptr augment_cloud, pcl::PointCloud<pcl::PointXYZRGBL>::Ptr result_cloud_ptr, size_t AR_planar);
@@ -168,12 +168,12 @@ main (int argc,
       char ** argv)
 {
   if (argc <= 5) {
-    PCL_INFO("Usage: ./MPSS [supervoxel_scale] [input_point_cloud] [ransacThreshold] [parrallel_threshold] [mu] [parrallel_filter] [distance_to_plane] (-sr) (-apc [aug_point_cloud])\n");
-    PCL_INFO("  Ex:  ./MPSS 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 \n");
-    PCL_INFO("  Ex:  ./MPSS 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 -sr\n");
-    PCL_INFO("  Ex:  ./MPSS 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 -apc my_pic.ply\n");
-    PCL_INFO("  Ex:  ./MPSS 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 -sr -apc my_pic.ply\n");
-    PCL_INFO("  Ex:  ./MPSS 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 -apc my_pic.ply -sr\n");
+    PCL_INFO("Usage: ./ESD [supervoxel_scale] [input_point_cloud] [ransacThreshold] [parrallel_threshold] [mu] [parrallel_filter] [distance_to_plane] (-sr) (-apc [aug_point_cloud])\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 \n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 -sr\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 -apc my_pic.ply\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 -sr -apc my_pic.ply\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 -apc my_pic.ply -sr\n");
     PCL_INFO("Notice:\n");
     PCL_INFO("  [input_point_cloud] and [aug_point_cloud] supports .ply and .pcd\n");
     PCL_INFO("  -sr: show result\n");
@@ -1040,7 +1040,7 @@ savePCDfile(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, const char* fileName)
 }
 
 void
-findNeighbor(std::vector<uint32_t>& plane, uint32_t the_cluster_num, double the_normal_x, double the_normal_y, double the_normal_z)
+findNeighbor(std::vector<uint32_t>& plane,const uint32_t& the_cluster_num, double& the_normal_x, double& the_normal_y, double& the_normal_z)
 {
   plane.push_back(the_cluster_num);
   int the_cluster_int = clusters_int.find(the_cluster_num)->second;
