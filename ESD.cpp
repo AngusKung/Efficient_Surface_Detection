@@ -167,15 +167,16 @@ int
 main (int argc,
       char ** argv)
 {
-  if (argc <= 5) {
-    PCL_INFO("Usage: ./ESD [supervoxel_scale] [input_point_cloud] [ransacThreshold] [parrallel_threshold] [mu] [parrallel_filter] [distance_to_plane] (-sr) (-apc [aug_point_cloud])\n");
-    PCL_INFO("  Ex:  ./ESD 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 \n");
-    PCL_INFO("  Ex:  ./ESD 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 -sr\n");
-    PCL_INFO("  Ex:  ./ESD 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 -apc my_pic.ply\n");
-    PCL_INFO("  Ex:  ./ESD 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 -sr -apc my_pic.ply\n");
-    PCL_INFO("  Ex:  ./ESD 0.00568 test20.pcd 0.001 0.8 0.2 0.8 0.005 -apc my_pic.ply -sr\n");
+  if (argc < 6) {
+    PCL_INFO("Usage: ./ESD [supervoxel_scale] [input_point_cloud] [parrallel_threshold] [mu] [parrallel_filter] [distance_to_plane] (-sr) (-o [save_filename]) (-apc [aug_point_cloud])\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd(.ply) 0.8 0.2 0.8 0.005 \n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd(.ply) 0.8 0.2 0.8 0.005 -sr\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd(.ply) 0.8 0.2 0.8 0.005 -apc my_pic.ply\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd(.ply) 0.8 0.2 0.8 0.005 -sr -apc my_pic.ply\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd(.ply) 0.8 0.2 0.8 0.005 -sr -o saved.ply -apc my_pic.ply\n");
     PCL_INFO("Notice:\n");
     PCL_INFO("  [input_point_cloud] and [aug_point_cloud] supports .ply and .pcd\n");
+    PCL_INFO("  format of [save_filename] is \"xyzrgbl\"\n");
     PCL_INFO("  -sr: show result\n");
     PCL_INFO("  -apc: augment point cloud\n");
     return false;
@@ -187,7 +188,7 @@ main (int argc,
   bool show_svcloud = pcl::console::find_switch (argc, argv, "-sv");
   bool show_result = pcl::console::find_switch (argc, argv, "-sr");
   bool aug_pc = pcl::console::find_switch (argc, argv, "-apc");
-  
+  bool save_pc = pcl::console::find_switch (argc, argv, "-o");
   /// Create variables needed for preparations
 
   //outputname can be changed customly
@@ -210,11 +211,11 @@ main (int argc,
   std::string pcd_filename = argv[2];
   PCL_INFO ("Loading pointcloud\n");
   float supervoxel_scale = atof(argv[1]);
-  double ransacThreshold = atof(argv[3]);
-  parrallel_threshold = atof(argv[4]);
-  mu = atof(argv[5]);
-  parrallel_filter = atof(argv[6]);
-  distance_to_plane = atof(argv[7]);
+  double ransacThreshold = 0.001;
+  parrallel_threshold = atof(argv[3]);
+  mu = atof(argv[4]);
+  parrallel_filter = atof(argv[5]);
+  distance_to_plane = atof(argv[6]);
   
   /// check if the provided pcd file contains normals
   pcl::PCLPointCloud2 input_pointcloud2;  //inpu_pointcloud2 ,new version of pcl
@@ -360,7 +361,7 @@ main (int argc,
     std::vector<uint32_t>::iterator super_it = plane.begin();
     double var_x=0,var_y=0,var_z=0;
     for(;super_it!=plane.end();super_it++){
-      int the_cluster_int = clusters_int.find(the_cluster_num)->second;
+      int the_cluster_int = clusters_int.find(*super_it)->second;
       var_x += pow(normal_vector_x[the_cluster_int]-avn_x,2);
       var_y += pow(normal_vector_y[the_cluster_int]-avn_y,2);
       var_z += pow(normal_vector_z[the_cluster_int]-avn_z,2);
@@ -520,11 +521,9 @@ main (int argc,
     voxel_itr->label = sv_label_to_seg_label_map[voxel_itr->label];
   }
   pcl::PointCloud<pcl::PointXYZRGBL>::Ptr result_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGBL>);
-  //std::ofstream normal_file;
   std::string file_name = ( pcd_filename.erase(0,4) ).erase(size_t(pcd_filename.end()-pcd_filename.begin())-4,4);
-  //std::string file_name = pcd_filename.erase(2,4);
-  //normal_file.open (("result/"+file_name+"_POS_NORM_VARs.txt").c_str());
-  //normal_file << "pos_x  ,pos_y  ,pos_z  ,norm_x  ,norm_y  ,norm_z  ,var\n";
+  
+  //===== save file (format:xyzrgbl)=====
   if( input_cloud_ptr->points.size() != mpss_labeled_cloud->points.size() )
     PCL_ERROR ("ERROR: Size of input point cloud (xyzrgb) != labeld point cloud (xyzl)");
   for(size_t i = 0; i != input_cloud_ptr->points.size(); ++i){
@@ -548,13 +547,11 @@ main (int argc,
     newP.g = inputP.g;
     newP.b = inputP.b;
     rgb_cloud_ptr->points.push_back(newP);
-    //normal_file << label2pos_x[l] <<" "<< label2pos_y[l] <<" "<< label2pos_z[l]<<" "
-    //            << label2norm_x[l] <<" "<< label2norm_y[l] <<" "<< label2norm_z[l]<<" "<<label2var[l]<<"\n";
   }
-  //normal_file.close();
-  //pcl::io::savePNGFile("surfaceDetection.png",*mpss_labeled_cloud,"label");
-  pcl::io::savePLYFileASCII(file_name+"_xyzrgbl.ply",*result_cloud_ptr);
-
+  if (save_pc){
+    std::string save_filename = argv[pcl::console::find_argument(argc, argv, "-o") +1];
+    pcl::io::savePLYFileASCII(save_filename+".ply",*result_cloud_ptr);
+  }
 
   if (aug_pc)
   { 
@@ -605,28 +602,6 @@ main (int argc,
     avn_y = 0;
     avn_z = 0;
     
-    // ===== assign pos here =====
-    /*float min_dis = FLT_MAX;
-    size_t nearestP = 0;
-    int nearest_cluster_int = 0;
-    uint32_t nearest_cluster_No = 0;
-    std::cout<<max_planar<<endl;
-    size_t AR_planar = max_planar; //orderVectors[0];
-    std::cout<<AR_planar<<endl;
-    std::vector<uint32_t>::iterator it = planesVectors[AR_planar].begin()+1;
-    for(; it != planesVectors[AR_planar].end(); it++){
-      int the_cluster_int = clusters_int.find(*it)->second;
-      float dis = std::sqrt( std::pow(aver_pos_x[AR_planar]-pos_x[the_cluster_int],2)+ std::pow(aver_pos_y[AR_planar]-pos_y[the_cluster_int],2)
-                  + std::pow(aver_pos_z[AR_planar]-pos_z[the_cluster_int],2) );
-      if(dis < min_dis){
-        nearest_cluster_int = the_cluster_int;
-        nearest_cluster_No = *it;
-        min_dis = dis;
-      }
-    }
-    float target_pos_x = pos_x[nearest_cluster_int];
-    float target_pos_y = pos_y[nearest_cluster_int];
-    float target_pos_z = pos_z[nearest_cluster_int];*/
     size_t AR_planar = max_planar;
     double target_pos_x = aver_pos_x[AR_planar];
     double target_pos_y = aver_pos_y[AR_planar];
@@ -917,19 +892,15 @@ main (int argc,
         rgb_cloud_ptr->points.push_back(newP);
       }
 
-    //pcl::io::savePLYFileASCII(file_name+"_AR_rev_all3_prune.ply",*result_cloud_ptr);
-    //pcl::io::savePLYFileASCII(file_name+"_AR_rgb.ply",*rgb_cloud_ptr);
-    //pcl::io::savePLYFileASCII(pcd_filename+"_aug.ply", *augment_cloud);
   }
 
   /// -----------------------------------|  Visualization  |-----------------------------------
-  //default to show for sure
   if (show_result)
   {
     pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
     viewer->setBackgroundColor (0, 0, 0);
     viewer->addPointCloud (mpss_labeled_cloud, "maincloud");
-    //viewer->addPointCloud (rgb_cloud_ptr, "rgb_cloud");
+    // uncomment below to see the original augmenting cloud!
     /*if (aug_pc){ 
       viewer->addPointCloud (augment_cloud, "augment_cloud");
       viewer->addPointCloud (augment_cloud2, "augment_cloud2");
@@ -939,11 +910,8 @@ main (int argc,
     PCL_INFO ("Loading viewer\n");
     while (!viewer->wasStopped ()){
       viewer->spinOnce (100);
-      /// Show Segmentation or Supervoxels
-      //viewer->saveScreenshot ("surfaceDetection.png");
-      //viewer->updatePointCloud ( (show_supervoxels) ? sv_labeled_cloud : mpss_labeled_cloud, "maincloud");
     }
-    //self-design to show supervoxel cloud
+    //self-design to show supervoxel cloud (deprecated from command line)
       if(show_svcloud){
       boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer_sup (new pcl::visualization::PCLVisualizer ("3D Viewer"));
       viewer_sup->setBackgroundColor (0, 0, 0);
