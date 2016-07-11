@@ -108,7 +108,7 @@ double coefficients_x, coefficients_y, coefficients_z, coefficients_num;
 //todo
 float voxel_resolution;//0.05 ,0.008
 float seed_resolution;//0.2  ,0.032
-float color_importance = 0.1f;
+float color_importance = 0.0f;
 float spatial_importance = 1.0f;
 float normal_importance = 4.0f;
 bool use_single_cam_transform = false;
@@ -143,7 +143,6 @@ std::vector<double> normal_vector_x,normal_vector_y,normal_vector_z;
 std::vector<double> pos_x, pos_y, pos_z;
 float max_x=0, max_y=0, max_z=0;
 float min_x=0, min_y=0, min_z=0;
-int size_temp=0;
 double avn_x=0,avn_y=0,avn_z=0;
 double avp_x=0, avp_y=0, avp_z=0;
 
@@ -169,15 +168,18 @@ main (int argc,
 {
   if (argc < 6) {
     PCL_INFO("Usage: ./ESD [supervoxel_scale] [input_point_cloud] [parrallel_threshold] [mu] [parrallel_filter] [distance_to_plane] (-sr) (-o [save_filename]) (-apc [aug_point_cloud])\n");
-    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd(.ply) 0.8 0.2 0.8 0.005 \n");
-    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd(.ply) 0.8 0.2 0.8 0.005 -sr\n");
-    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd(.ply) 0.8 0.2 0.8 0.005 -apc my_pic.ply\n");
-    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd(.ply) 0.8 0.2 0.8 0.005 -sr -apc my_pic.ply\n");
-    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd(.ply) 0.8 0.2 0.8 0.005 -sr -o saved.ply -apc my_pic.ply\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 \n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -sr\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -st\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -apc my_pic.ply\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -sr -apc my_pic.ply\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -sr -o saved.ply -apc my_pic.ply\n");
     PCL_INFO("Notice:\n");
     PCL_INFO("  [input_point_cloud] and [aug_point_cloud] supports .ply and .pcd\n");
     PCL_INFO("  format of [save_filename] is \"xyzrgbl\"\n");
+    PCL_INFO("  -o: save the result with [filename]\n");
     PCL_INFO("  -sr: show result\n");
+    PCL_INFO("  -st: show time usage\n");
     PCL_INFO("  -apc: augment point cloud\n");
     return false;
   }
@@ -186,6 +188,7 @@ main (int argc,
 
   bool add_label_field = true;
   bool show_svcloud = pcl::console::find_switch (argc, argv, "-sv");
+  bool show_time = pcl::console::find_switch (argc, argv, "-st");
   bool show_result = pcl::console::find_switch (argc, argv, "-sr");
   bool aug_pc = pcl::console::find_switch (argc, argv, "-apc");
   bool save_pc = pcl::console::find_switch (argc, argv, "-o");
@@ -209,7 +212,6 @@ main (int argc,
   
   /// Get pcd path from command line
   std::string pcd_filename = argv[2];
-  PCL_INFO ("Loading pointcloud\n");
   float supervoxel_scale = atof(argv[1]);
   double ransacThreshold = 0.001;
   parrallel_threshold = atof(argv[3]);
@@ -218,6 +220,7 @@ main (int argc,
   distance_to_plane = atof(argv[6]);
   
   /// check if the provided pcd file contains normals
+  PCL_INFO ("Loading pointcloud\n");
   pcl::PCLPointCloud2 input_pointcloud2;  //inpu_pointcloud2 ,new version of pcl
   if (loadPointCloudFile(pcd_filename, input_pointcloud2))
   {
@@ -227,13 +230,12 @@ main (int argc,
   pcl::fromPCLPointCloud2 (input_pointcloud2, *input_cloud_ptr);
   PCL_INFO ("Done making cloud\n");
 
-  //time usage
+  //----- time usage -----
   std::clock_t start;
   double duration;
   start = std::clock();
-/// -----------------------------------|  Main Computation  |-----------------------------------
-  // Default values 
-  //finding max & min in the point cloud
+  
+  //----- Finding Max & Min in the input point clouds, preperation for self-adjustable setting -----
   for (size_t i = 0; i != input_cloud_ptr->points.size(); ++i){
     pcl::PointXYZRGBA checkP = input_cloud_ptr->points.at(i);
     if(checkP.x > max_x)
@@ -249,43 +251,44 @@ main (int argc,
     if(checkP.z < min_z)
       min_z = checkP.z;
   }
-  //Input point cloud variance calculation, XYZ stuff
-  //std::cout<<"MAX:"<<max_x<<","<<max_y<<","<<max_z<<endl;
-  //std::cout<<"MIN:"<<min_x<<","<<min_y<<","<<min_z<<endl;
-  //std::cout<<"input_dis_var: "<<pow((max_x-min_x)*(max_y-min_y)*(max_z-min_z),1/3.)<<endl;
-  //parameter
+
+  //----- Parameter setting for supervoxel segmentation, equiped with a self-adjusting mechanism based on the size, max ,min of the input point clouds
   double input_dis_var = pow((max_x-min_x)*(max_y-min_y)*(max_z-min_z),1/3.);
   voxel_resolution = supervoxel_scale * input_dis_var;
   seed_resolution = voxel_resolution * 4;
-  //std::cout<<"voxel_resolution: "<<voxel_resolution<<endl;
-  // Supervoxel Stuff
-  /// Preparation of Input: Supervoxel Oversegmentation
 
+  //----- Supervoxel Segmentation -----
   pcl::SupervoxelClustering<PointT> super (voxel_resolution, seed_resolution, use_single_cam_transform);
   super.setUseSingleCameraTransform(use_single_cam_transform);
   super.setInputCloud (input_cloud_ptr);
-  if (has_normals)
+  if (has_normals){
     super.setNormalCloud (input_normals_ptr);
+  }
   super.setColorImportance (color_importance);
   super.setSpatialImportance (spatial_importance);
   super.setNormalImportance (normal_importance);
   std::map<uint32_t, pcl::Supervoxel<PointT>::Ptr> supervoxel_clusters;
 
   PCL_INFO ("Extracting supervoxels\n");
-  super.extract (supervoxel_clusters); //initCompute & preapreForSegmentation(generate most variables) ,selectInitialSupervoxelSeeds(start the index mapping using Octree),
-  // createSupervoxelHeplers(record all the variables while computing), expandSupervoxels(iterate through each seeds),makeSupervoxels(finally duplicate the computed final version)
-
+  super.extract (supervoxel_clusters); 
+  /* Detail of super.extract: (No need to study unless modification upon supervoxel clustering)
+    initCompute & preapreForSegmentation(generate most variables) ,selectInitialSupervoxelSeeds(start the index mapping using Octree),
+    createSupervoxelHeplers(record all the variables while computing), expandSupervoxels(iterate through each seeds),makeSupervoxels(finally duplicate the computed final version)
+  */
+  
   std::stringstream temp;
   temp << "  Nr. Supervoxels: " << supervoxel_clusters.size () << "\n";
   PCL_INFO (temp.str ().c_str ());
-
   PCL_INFO ("Getting supervoxel adjacency\n");
   super.getSupervoxelAdjacency (supervoxel_adjacency);
-  //time usage due
-  duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-  std::cerr<<"sv time usage: "<< duration <<'\n';
+  
+  //----- time usage due -----
+  if(show_time){
+    duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+    std::cerr<<"supervoxel clustering time usage: "<< duration <<'\n';
+  }
 
-  //===============================   MPSS parameter evaluation   =================================
+  //----- Vectors declaration for the Main loop -----
   std::map<uint32_t, pcl::Supervoxel<PointT>::Ptr>::iterator label_itr = supervoxel_clusters.begin();
   std::multimap<int,uint32_t> clusters_belong;
   std::multimap<int,uint32_t>::iterator belong_itr = clusters_belong.begin();
@@ -295,10 +298,10 @@ main (int argc,
   clusters_int.clear();
   std::vector<int> sizeVectors;
 
+  //----- Normal vector and position of every supervoxel is saved in self-desigend vector (faster during computation) -----
   int i=0;
   float average_nor_x =0.0; double average_nor_y = 0.0; double average_nor_z =0.0;
-  for (; label_itr != supervoxel_clusters.end (); label_itr++)
-    {
+  for (; label_itr != supervoxel_clusters.end (); label_itr++){
       pcl::Supervoxel<PointT>::Ptr supervoxel = label_itr->second;
       normal_vector_x.push_back(supervoxel->normal_.normal_x);
       normal_vector_y.push_back(supervoxel->normal_.normal_y);
@@ -309,12 +312,9 @@ main (int argc,
       clusters_int.insert(std::pair<uint32_t,int>(label_itr->first,i));
       clusters_used.insert(std::pair<uint32_t,bool>(label_itr->first,false));
       i++;
-    }
-    float count = float(i);
-    count/=3.0;
-  average_nor_x /= count; average_nor_y /= count; average_nor_z /= count;
+  }
 
-  //===============================   MPSS  =================================
+  //----- Parameter declaration for the Main loop -----
   label_itr = supervoxel_clusters.begin();
   int clusters_belong_int=0;
   int the_cluster_int;
@@ -325,7 +325,8 @@ main (int argc,
   int vector_int = 0;
   uint32_t the_cluster_num;
   int trial = 0;
-  //start labeling
+  
+  //----- Main loop, iterate through all the supervoxels in the scene -----
   while(label_itr != supervoxel_clusters.end() )
   {
     if( clusters_used.find(label_itr->first)->second==true )
@@ -342,7 +343,6 @@ main (int argc,
     the_normal_z = normal_vector_z[the_cluster_int];
     //std::cerr<<endl<<"x: "<<the_normal_x<<endl<<"y: "<<the_normal_y<<endl<<"z: "<<the_normal_z<<endl;
     plane.clear();
-    ::size_temp = 0;
     ::avp_x = 0;
     ::avp_y = 0;
     ::avp_z = 0;
@@ -350,15 +350,19 @@ main (int argc,
     ::avn_y = 0;
     ::avn_z = 0;
     findNeighbor(plane,the_cluster_num,the_normal_x,the_normal_y,the_normal_z);
-    if(::size_temp <= 1)
+    size_temp = plane.size();
+    if(size_temp <= 1)
       continue;
-    ::avn_x /= double(::size_temp);
-    ::avn_y /= double(::size_temp);
-    ::avn_z /= double(::size_temp);
-    ::avp_x /= double(::size_temp);
-    ::avp_y /= double(::size_temp);
-    ::avp_z /= double(::size_temp);
+    //----- avn = average normal vector, avp = average position (useful for augmentation)-----
+    ::avn_x /= double(size_temp);
+    ::avn_y /= double(size_temp);
+    ::avn_z /= double(size_temp);
+    ::avp_x /= double(size_temp);
+    ::avp_y /= double(size_temp);
+    ::avp_z /= double(size_temp);
     std::vector<uint32_t>::iterator super_it = plane.begin();
+
+    //----- calculate the variance of normal vector ----- 
     double var_x=0,var_y=0,var_z=0;
     for(;super_it!=plane.end();super_it++){
       int the_cluster_int = clusters_int.find(*super_it)->second;
@@ -366,13 +370,14 @@ main (int argc,
       var_y += pow(normal_vector_y[the_cluster_int]-avn_y,2);
       var_z += pow(normal_vector_z[the_cluster_int]-avn_z,2);
     }
-    double var = (var_x+var_y+var_z)/double(::size_temp);
-    //std::cout<<"Var x:"<<var_x<<",y:"<<var_y<<",z:"<<var_z<<endl;
-    //std::cout<<"Variance"<<var<<endl;
+    double var = (var_x+var_y+var_z)/double(size_temp);
+    
+    //----- variance of normal vector, if var >= 0.1 indicating the surface candidate is a curved one with high possibility ----- 
     if(var>=0.1){
       bool newCurve = true;
       //Curvature Refinements
-      for(std::vector<double>::iterator find_it = aver_pos_x.begin();find_it!=aver_pos_x.end();find_it++){
+      //----- In progress, no suitable algorithm for "curvature recombination" yet, thus commented -----
+      /*for(std::vector<double>::iterator find_it = aver_pos_x.begin();find_it!=aver_pos_x.end();find_it++){
         size_t diff = find_it-aver_pos_x.begin();
         double op_x = aver_pos_x[diff];
         double op_y = aver_pos_y[diff];
@@ -384,6 +389,8 @@ main (int argc,
           break;
         }
       }
+      */
+      //----- if it is a curved surface candidate, then always marked as a new curved surface -----
       if(newCurve==true){
         std::vector<uint32_t> tmp(1,CURVATURE);
         tmp.insert(tmp.end(),plane.begin(),plane.end());
@@ -396,10 +403,13 @@ main (int argc,
         aver_pos_z.push_back(avp_z);
         aver_var.push_back(var);
       }
+      else{
+        PCL_ERROR ("A new surface is not marked with a curved surface candidates.");
+      }
     }
-    //else{
+    else{
       bool new_plane = true;
-      //Planar Refinements
+      //Planar Recombinations
       for(std::vector<double>::iterator find_it = aver_nor_x.begin();find_it!=aver_nor_x.end();find_it++){
         size_t diff = find_it-aver_nor_x.begin();
         double on_x = *find_it;
@@ -434,12 +444,14 @@ main (int argc,
         aver_pos_z.push_back(avp_z);
         aver_var.push_back(var);
       }
-    //}
+    }
 
   }
   //time usage due
-  duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-  std::cerr<<"time usage: "<< duration <<'\n';
+  if(show_time){
+    duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+    std::cerr<<"Overall time usage: "<< duration <<'\n';
+  }
 
   pcl::PointXYZRGBA the_point;
   pcl::PointCloud<pcl::PointXYZRGBA> the_points;
@@ -1018,7 +1030,6 @@ findNeighbor(std::vector<uint32_t>& plane,const uint32_t& the_cluster_num, doubl
   ::avp_x += pos_x[the_cluster_int];
   ::avp_y += pos_y[the_cluster_int];
   ::avp_z += pos_z[the_cluster_int];
-  ::size_temp++;
   std::multimap<uint32_t,uint32_t>::iterator adjacency_itr = supervoxel_adjacency.begin ();
   std::pair <std::multimap<uint32_t,uint32_t>::iterator, std::multimap<uint32_t,uint32_t>::iterator> range 
                                                       = supervoxel_adjacency.equal_range(the_cluster_num);
