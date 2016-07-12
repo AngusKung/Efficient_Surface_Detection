@@ -15,5 +15,6 @@ make<br />
 
 If you use this source code, please cite the paper: "Efficient Surface Detection for Augmented Reality on 3D Point Clouds" by Yen-Cheng Kung, Yung-Lin Huang, Shao-Yi Chien.
 
+I'm now vacation right now, more work will be done after my vacation end on 7/24.
 For any further question,
 please feel free to contact me by "angusthefrog@gmail.com"
