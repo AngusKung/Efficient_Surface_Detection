@@ -35,7 +35,13 @@
  *
  */
 
-// Stdlib
+/*
+- Efforts of Yen-Cheng Kung
+- Please cite the paper "Efficient Surface Detection for Augmented Reality on 3D Point Clouds" if you use this code.
+- Paper can be found at : http://dl.acm.org/citation.cfm?id=2949058
+*/
+
+// stdlib
 #include <cstdlib>
 #include <climits>
 #include <cmath>
@@ -74,21 +80,20 @@
 #include <vtkImageFlip.h>
 #include <vtkPolyLine.h>
 
- //planar segmentation
+ // planar segmentation
 #include <pcl/ModelCoefficients.h>
 #include <pcl/point_types.h>
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 
-//time usage
+// time usage
 #include <ctime>
 
 #define CURVATURE UINT32_MAX
 #define PLANE 0
 
-/// *****  Type Definitions ***** ///
-
+// brief of frequent usage
 typedef pcl::PointXYZRGBA PointT;  // The point type used for input
 typedef pcl::PointCloud<PointT> PointCloudT; // used when showing supervoxel 
 typedef pcl::PointNormal PointNT;
@@ -97,15 +102,14 @@ typedef pcl::PointXYZL PointLT;
 typedef pcl::PointCloud<PointLT> PointLCloudT;
 typedef pcl::LCCPSegmentation<PointT>::SupervoxelAdjacencyList SuperVoxelAdjacencyList; //the adjacency recorded data types
 
-/// Callback and variables
-
+//----- visualization setting -----
 bool show_normals = false, normals_changed = false;
 bool show_adjacency = false;
 bool show_supervoxels = false;
 bool show_help = true;
 double coefficients_x, coefficients_y, coefficients_z, coefficients_num;
 
-//todo
+//----- parameter setting of supervoxel segmentation -----
 float voxel_resolution;//0.05 ,0.008
 float seed_resolution;//0.2  ,0.032
 float color_importance = 0.0f;
@@ -170,9 +174,8 @@ main (int argc,
     PCL_INFO("Usage: ./ESD [supervoxel_scale] [input_point_cloud] [parrallel_threshold] [mu] [parrallel_filter] [distance_to_plane] (-sr) (-o [save_filename]) (-apc [aug_point_cloud])\n");
     PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 \n");
     PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -sr\n");
-    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -st\n");
     PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -apc my_pic.ply\n");
-    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -sr -apc my_pic.ply\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -sr -apc my_pic.ply -st\n");
     PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -sr -o saved.ply -apc my_pic.ply\n");
     PCL_INFO("Notice:\n");
     PCL_INFO("  [input_point_cloud] and [aug_point_cloud] supports .ply and .pcd\n");
@@ -192,9 +195,8 @@ main (int argc,
   bool show_result = pcl::console::find_switch (argc, argv, "-sr");
   bool aug_pc = pcl::console::find_switch (argc, argv, "-apc");
   bool save_pc = pcl::console::find_switch (argc, argv, "-o");
-  /// Create variables needed for preparations
 
-  //outputname can be changed customly
+  //----- One-overall declaration of all the point clouds -----
   pcl::PointCloud<PointT>::Ptr input_cloud_ptr (new pcl::PointCloud<PointT>);
   pcl::PointCloud<pcl::Normal>::Ptr input_normals_ptr (new pcl::PointCloud<pcl::Normal>); 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -209,8 +211,6 @@ main (int argc,
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr RANSAC_cloud3 (new pcl::PointCloud<pcl::PointXYZRGB>);
   
   bool has_normals = false;
-  
-  /// Get pcd path from command line
   std::string pcd_filename = argv[2];
   float supervoxel_scale = atof(argv[1]);
   double ransacThreshold = 0.001;
@@ -219,7 +219,7 @@ main (int argc,
   parrallel_filter = atof(argv[5]);
   distance_to_plane = atof(argv[6]);
   
-  /// check if the provided pcd file contains normals
+  //---- Loading pointcloud -----
   PCL_INFO ("Loading pointcloud\n");
   pcl::PCLPointCloud2 input_pointcloud2;  //inpu_pointcloud2 ,new version of pcl
   if (loadPointCloudFile(pcd_filename, input_pointcloud2))
