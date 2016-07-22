@@ -196,7 +196,7 @@ main (int argc,
   bool aug_pc = pcl::console::find_switch (argc, argv, "-apc");
   bool save_pc = pcl::console::find_switch (argc, argv, "-o");
 
-  //----- One-overall declaration of all the point clouds -----
+  //----- Declaration of all the point clouds -----
   pcl::PointCloud<PointT>::Ptr input_cloud_ptr (new pcl::PointCloud<PointT>);
   pcl::PointCloud<pcl::Normal>::Ptr input_normals_ptr (new pcl::PointCloud<pcl::Normal>); 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -326,7 +326,7 @@ main (int argc,
   uint32_t the_cluster_num;
   int trial = 0;
   
-  //----- Main loop, iterate through all the supervoxels in the scene -----
+  //----- Main loop, iterate through all the supervoxels until every supervoxel is "reached"-----
   while(label_itr != supervoxel_clusters.end() )
   {
     if( clusters_used.find(label_itr->first)->second==true )
@@ -336,12 +336,14 @@ main (int argc,
     }
     clusters_used.find(label_itr->first)->second = true;
     trial++;
+    //----- Retrieving the seed's information -----
     the_cluster_num = label_itr->first;
     the_cluster_int = clusters_int.find(the_cluster_num)->second;
     the_normal_x = normal_vector_x[the_cluster_int];
     the_normal_y = normal_vector_y[the_cluster_int];
     the_normal_z = normal_vector_z[the_cluster_int];
-    //std::cerr<<endl<<"x: "<<the_normal_x<<endl<<"y: "<<the_normal_y<<endl<<"z: "<<the_normal_z<<endl;
+    
+    //----- plane = container of every supervoxel in the new surface candidate
     plane.clear();
     ::avp_x = 0;
     ::avp_y = 0;
@@ -349,6 +351,7 @@ main (int argc,
     ::avn_x = 0;
     ::avn_y = 0;
     ::avn_z = 0;
+    //----- findNeighbor = Agglomerative Surface Growing calling recursively -----
     findNeighbor(plane,the_cluster_num,the_normal_x,the_normal_y,the_normal_z);
     size_temp = plane.size();
     if(size_temp <= 1)
@@ -407,9 +410,10 @@ main (int argc,
         PCL_ERROR ("A new surface is not marked with a curved surface candidates.");
       }
     }
+    //----- variance of normal vector < 0.1, which means the surface candidate is a plane. -----
     else{
       bool new_plane = true;
-      //Planar Recombinations
+      //----- Planar Recombinations : recombine the new planes with existed planes with similar planar function-----
       for(std::vector<double>::iterator find_it = aver_nor_x.begin();find_it!=aver_nor_x.end();find_it++){
         size_t diff = find_it-aver_nor_x.begin();
         double on_x = *find_it;
@@ -418,6 +422,7 @@ main (int argc,
         double op_x = aver_pos_x[diff];
         double op_y = aver_pos_y[diff];
         double op_z = aver_pos_z[diff];
+        //----- similarity of planar function -----
         if(planesVectors[diff][0]==PLANE && std::abs(avn_x*on_x +avn_y*on_y +avn_z*on_z) > parrallel_filter && 
           std::abs((avn_x*avp_x + avn_y*avp_y + avn_z*avp_z) - (on_x*op_x + on_y*op_y + on_z*op_z)) < distance_to_plane ) {
           new_plane = false;
@@ -447,7 +452,7 @@ main (int argc,
     }
 
   }
-  //time usage due
+  //----- time usage due -----
   if(show_time){
     duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
     std::cerr<<"Overall time usage: "<< duration <<'\n';
