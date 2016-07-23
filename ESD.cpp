@@ -467,14 +467,14 @@ main (int argc,
   pcl::PointCloud<pcl::PointXYZL>::Ptr sv_labeled_cloud = super.getLabeledCloud ();
   pcl::PointCloud<pcl::PointXYZL>::Ptr mpss_labeled_cloud = sv_labeled_cloud->makeShared ();
 
-  //uint32_t curveNo = 2;
+  //planeNo = plane label number, start from 2 and above because 0 is reserve for supervoxel failure, while 1 stands for unlabel supervoxel
   uint32_t planeNo = 2;
-  int sizetemp = 0;
-  size_t max_planar =plane_it - planesVectors.begin();
-  // For finding max & relabel XYZL for visualization
+  //curveNo = curvature label number, avoid collision with planeNo
+  uint32_t curveNo = 2 + planesVectors.size();
+  //----- relabel every surfaces accordingly-----
   for(;plane_it != planesVectors.end(); plane_it++){
-    // ================== relabel ================
     std::vector<uint32_t>::iterator it = plane_it->begin();
+    //----- curved surfaces -----
     if(*it==CURVATURE){
       size_t diff = plane_it-planesVectors.begin();
       label2norm_x.insert(std::pair<uint32_t,float>(planeNo,aver_nor_x[diff]));
@@ -484,11 +484,12 @@ main (int argc,
       label2pos_y.insert(std::pair<uint32_t,float>(planeNo,aver_pos_y[diff]));
       label2pos_z.insert(std::pair<uint32_t,float>(planeNo,aver_pos_z[diff]));
       label2var.insert(std::pair<uint32_t,float>(planeNo,aver_var[diff]));
-      //std::cout<<"label2norm: No."<<planeNo<<"  "<<diff<<","<<aver_nor_x[diff]<<","<<aver_nor_y[diff]<<","<<aver_nor_z[diff]<<endl;
+      //----- relabel every supervoxels in the surface  -----
       for(it = plane_it->begin()+1; it!= plane_it->end(); it++)
-        sv_label_to_seg_label_map[*it]=planeNo;
-      planeNo++;
+        sv_label_to_seg_label_map[*it]=curveNo;
+      curveNo++;
     }
+    //----- planar surfaces -----
     else{
       size_t diff = plane_it-planesVectors.begin();
       label2norm_x.insert(std::pair<uint32_t,float>(planeNo,aver_nor_x[diff]));
@@ -498,19 +499,13 @@ main (int argc,
       label2pos_y.insert(std::pair<uint32_t,float>(planeNo,aver_pos_y[diff]));
       label2pos_z.insert(std::pair<uint32_t,float>(planeNo,aver_pos_z[diff]));
       label2var.insert(std::pair<uint32_t,float>(planeNo,aver_var[diff]));
-      //std::cout<<"label2norm: No."<<planeNo<<"  "<<diff<<","<<aver_nor_x[diff]<<","<<aver_nor_y[diff]<<","<<aver_nor_z[diff]<<endl;
+      //----- relabel every supervoxels in the surface  -----
       for(it = plane_it->begin()+1; it!= plane_it->end(); it++)
         sv_label_to_seg_label_map[*it]=planeNo;
       planeNo++;
     }
-    // ================== findMax ================
-    if(plane_it->size() > sizetemp){
-      sizetemp = plane_it->size();
-      max_planar = plane_it - planesVectors.begin();
-    }
-    // ================== orderVectors =======================
+    //----- orderVectors, all surfaces in size-descending order -----
     size_t orderNo = plane_it - planesVectors.begin();
-    //std::cout<<orderNo<<endl;
     if(orderVectors.size()==0){
       orderVectors.push_back( orderNo );
     }
@@ -529,9 +524,7 @@ main (int argc,
   }
   std::cerr<<"on total "<<mpss_labeled_cloud->points.size()<<endl;
 
-  /*for(order_it = orderVectors.begin();order_it!=orderVectors.end(); order_it++){
-    std::cout<<order_it-orderVectors.begin()<<":"<<planesVectors[*order_it].size()<<endl;
-  }*/
+  //----- physically label every single voxel according to the label of belonging supervoxels -----
   pcl::PointCloud<pcl::PointXYZL>::iterator voxel_itr = mpss_labeled_cloud->begin ();
   int no = 0;
   for (; voxel_itr != mpss_labeled_cloud->end (); voxel_itr++){
@@ -619,7 +612,7 @@ main (int argc,
     avn_y = 0;
     avn_z = 0;
     
-    size_t AR_planar = max_planar;
+    size_t AR_planar = orderVectors[0];
     double target_pos_x = aver_pos_x[AR_planar];
     double target_pos_y = aver_pos_y[AR_planar];
     double target_pos_z = aver_pos_z[AR_planar];
