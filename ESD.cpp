@@ -175,8 +175,8 @@ main (int argc,
     PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 \n");
     PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -sr\n");
     PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -apc my_pic.ply\n");
-    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -sr -apc my_pic.ply -st\n");
-    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -sr -o saved.ply -apc my_pic.ply\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -sr -st -apc my_pic1.ply my_pic2.ply\n");
+    PCL_INFO("  Ex:  ./ESD 0.00568 my.pcd 0.8 0.2 0.8 0.005 -sr -o saved.ply -apc my_pic1.ply my_pic2.ply my_pic3.ply\n");
     PCL_INFO("Notice:\n");
     PCL_INFO("  [input_point_cloud] and [aug_point_cloud] supports .ply and .pcd\n");
     PCL_INFO("  format of [save_filename] is \"xyzrgbl\"\n");
