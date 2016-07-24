@@ -203,12 +203,7 @@ main (int argc,
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr add_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr augment_cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr RANSAC_cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr add_cloud_ptr2 (new pcl::PointCloud<pcl::PointXYZRGB>);
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr augment_cloud2 (new pcl::PointCloud<pcl::PointXYZRGB>);
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr RANSAC_cloud2 (new pcl::PointCloud<pcl::PointXYZRGB>);
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr add_cloud_ptr3 (new pcl::PointCloud<pcl::PointXYZRGB>);
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr augment_cloud3 (new pcl::PointCloud<pcl::PointXYZRGB>);
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr RANSAC_cloud3 (new pcl::PointCloud<pcl::PointXYZRGB>);
+  pcl::PointCloud<pcl::PointXYZRGBL>::Ptr result_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGBL>);
   
   bool has_normals = false;
   std::string pcd_filename = argv[2];
@@ -467,42 +462,40 @@ main (int argc,
   pcl::PointCloud<pcl::PointXYZL>::Ptr sv_labeled_cloud = super.getLabeledCloud ();
   pcl::PointCloud<pcl::PointXYZL>::Ptr mpss_labeled_cloud = sv_labeled_cloud->makeShared ();
 
-  //planeNo = plane label number, start from 2 and above because 0 is reserve for supervoxel failure, while 1 stands for unlabel supervoxel
-  uint32_t planeNo = 2;
-  //curveNo = curvature label number, avoid collision with planeNo
-  uint32_t curveNo = 2 + planesVectors.size();
+  //surfaceNo = surface label number, start from 2 and above because 0 is reserve for supervoxel failure, while 1 stands for unlabel supervoxel
+  uint32_t surfaceNo = 2;
   //----- relabel every surfaces accordingly-----
   for(;plane_it != planesVectors.end(); plane_it++){
     std::vector<uint32_t>::iterator it = plane_it->begin();
     //----- curved surfaces -----
     if(*it==CURVATURE){
       size_t diff = plane_it-planesVectors.begin();
-      label2norm_x.insert(std::pair<uint32_t,float>(planeNo,aver_nor_x[diff]));
-      label2norm_y.insert(std::pair<uint32_t,float>(planeNo,aver_nor_y[diff]));
-      label2norm_z.insert(std::pair<uint32_t,float>(planeNo,aver_nor_z[diff]));
-      label2pos_x.insert(std::pair<uint32_t,float>(planeNo,aver_pos_x[diff]));
-      label2pos_y.insert(std::pair<uint32_t,float>(planeNo,aver_pos_y[diff]));
-      label2pos_z.insert(std::pair<uint32_t,float>(planeNo,aver_pos_z[diff]));
-      label2var.insert(std::pair<uint32_t,float>(planeNo,aver_var[diff]));
+      label2norm_x.insert(std::pair<uint32_t,float>(surfaceNo,aver_nor_x[diff]));
+      label2norm_y.insert(std::pair<uint32_t,float>(surfaceNo,aver_nor_y[diff]));
+      label2norm_z.insert(std::pair<uint32_t,float>(surfaceNo,aver_nor_z[diff]));
+      label2pos_x.insert(std::pair<uint32_t,float>(surfaceNo,aver_pos_x[diff]));
+      label2pos_y.insert(std::pair<uint32_t,float>(surfaceNo,aver_pos_y[diff]));
+      label2pos_z.insert(std::pair<uint32_t,float>(surfaceNo,aver_pos_z[diff]));
+      label2var.insert(std::pair<uint32_t,float>(surfaceNo,aver_var[diff]));
       //----- relabel every supervoxels in the surface  -----
       for(it = plane_it->begin()+1; it!= plane_it->end(); it++)
-        sv_label_to_seg_label_map[*it]=curveNo;
-      curveNo++;
+        sv_label_to_seg_label_map[*it]=surfaceNo;
+      surfaceNo++;
     }
     //----- planar surfaces -----
     else{
       size_t diff = plane_it-planesVectors.begin();
-      label2norm_x.insert(std::pair<uint32_t,float>(planeNo,aver_nor_x[diff]));
-      label2norm_y.insert(std::pair<uint32_t,float>(planeNo,aver_nor_y[diff]));
-      label2norm_z.insert(std::pair<uint32_t,float>(planeNo,aver_nor_z[diff]));
-      label2pos_x.insert(std::pair<uint32_t,float>(planeNo,aver_pos_x[diff]));
-      label2pos_y.insert(std::pair<uint32_t,float>(planeNo,aver_pos_y[diff]));
-      label2pos_z.insert(std::pair<uint32_t,float>(planeNo,aver_pos_z[diff]));
-      label2var.insert(std::pair<uint32_t,float>(planeNo,aver_var[diff]));
+      label2norm_x.insert(std::pair<uint32_t,float>(surfaceNo,aver_nor_x[diff]));
+      label2norm_y.insert(std::pair<uint32_t,float>(surfaceNo,aver_nor_y[diff]));
+      label2norm_z.insert(std::pair<uint32_t,float>(surfaceNo,aver_nor_z[diff]));
+      label2pos_x.insert(std::pair<uint32_t,float>(surfaceNo,aver_pos_x[diff]));
+      label2pos_y.insert(std::pair<uint32_t,float>(surfaceNo,aver_pos_y[diff]));
+      label2pos_z.insert(std::pair<uint32_t,float>(surfaceNo,aver_pos_z[diff]));
+      label2var.insert(std::pair<uint32_t,float>(surfaceNo,aver_var[diff]));
       //----- relabel every supervoxels in the surface  -----
       for(it = plane_it->begin()+1; it!= plane_it->end(); it++)
-        sv_label_to_seg_label_map[*it]=planeNo;
-      planeNo++;
+        sv_label_to_seg_label_map[*it]=surfaceNo;
+      surfaceNo++;
     }
     //----- orderVectors, all surfaces in size-descending order -----
     size_t orderNo = plane_it - planesVectors.begin();
@@ -524,384 +517,177 @@ main (int argc,
   }
   std::cerr<<"on total "<<mpss_labeled_cloud->points.size()<<endl;
 
-  //----- physically label every single voxel according to the label of belonging supervoxels -----
+  //----- label every single "voxel" according to the label of belonging supervoxels -----
   pcl::PointCloud<pcl::PointXYZL>::iterator voxel_itr = mpss_labeled_cloud->begin ();
   int no = 0;
   for (; voxel_itr != mpss_labeled_cloud->end (); voxel_itr++){
     voxel_itr->label = sv_label_to_seg_label_map[voxel_itr->label];
   }
-  pcl::PointCloud<pcl::PointXYZRGBL>::Ptr result_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGBL>);
   std::string file_name = ( pcd_filename.erase(0,4) ).erase(size_t(pcd_filename.end()-pcd_filename.begin())-4,4);
   
-  //===== save file (format:xyzrgbl)=====
+  //----- save file ( format:xyzrgbl, can be open by "viewerESD" ) -----
   if( input_cloud_ptr->points.size() != mpss_labeled_cloud->points.size() )
     PCL_ERROR ("ERROR: Size of input point cloud (xyzrgb) != labeld point cloud (xyzl)");
   for(size_t i = 0; i != input_cloud_ptr->points.size(); ++i){
-    pcl::PointXYZRGBA inputP = input_cloud_ptr->points.at(i);
-    pcl::PointXYZL labelP = mpss_labeled_cloud->points.at(i);
-    pcl::PointXYZRGBL newPoint;
-    pcl::PointXYZRGB newP;
-    newPoint.x = inputP.x;
-    newPoint.y = inputP.y;
-    newPoint.z = inputP.z;
-    newPoint.r = inputP.r;
-    newPoint.g = inputP.g;
-    newPoint.b = inputP.b;
-    uint32_t l = labelP.label;
-    newPoint.label = l;
-    result_cloud_ptr->points.push_back(newPoint);
-    newP.x = inputP.x;
-    newP.y = inputP.y;
-    newP.z = inputP.z;
-    newP.r = inputP.r;
-    newP.g = inputP.g;
-    newP.b = inputP.b;
-    rgb_cloud_ptr->points.push_back(newP);
-  }
+      pcl::PointXYZRGBA inputP = input_cloud_ptr->points.at(i);
+      pcl::PointXYZL labelP = mpss_labeled_cloud->points.at(i);
+      pcl::PointXYZRGBL newPoint;
+      pcl::PointXYZRGB newP;
+      newPoint.x = inputP.x;
+      newPoint.y = inputP.y;
+      newPoint.z = inputP.z;
+      newPoint.r = inputP.r;
+      newPoint.g = inputP.g;
+      newPoint.b = inputP.b;
+      uint32_t l = labelP.label;
+      newPoint.label = l;
+      result_cloud_ptr->points.push_back(newPoint);
+      newP.x = inputP.x;
+      newP.y = inputP.y;
+      newP.z = inputP.z;
+      newP.r = inputP.r;
+      newP.g = inputP.g;
+      newP.b = inputP.b;
+      rgb_cloud_ptr->points.push_back(newP);
+    }
   if (save_pc){
     std::string save_filename = argv[pcl::console::find_argument(argc, argv, "-o") +1];
     pcl::io::savePLYFileASCII(save_filename+".ply",*result_cloud_ptr);
   }
 
-  if (aug_pc)
-  { 
-    std::string add_filename = argv[pcl::console::find_argument(argc, argv, "-apc") +1];
-    std::string add_filename2 = argv[pcl::console::find_argument(argc, argv, "-apc") +2];
-    std::string add_filename3 = argv[pcl::console::find_argument(argc, argv, "-apc") +3];
-    PCL_INFO ("Loading file to add\n");
+  //----- basic augmentation system using RANSAC to retain accurate normal vector of the surfaces-----
+  if (aug_pc){
+    int aug_num = 1;
+    bool noCloud = true;
+    //make sure augmentation won't exceed the quantities of detected surfaces in the scene
+    while( aug_num <= orderVectors.size() ){
 
-    //=================== reading add point cloud =====================
-    pcl::PCLPointCloud2 input_pointcloud_add;  //inpu_pointcloud2 ,new version of pcl
-    if (loadPointCloudFile(add_filename, input_pointcloud_add))
-    {
-      PCL_ERROR ("ERROR: Could not read add point cloud %s.\n", add_filename.c_str ());
+      if( (argc-1) >= (pcl::console::find_argument(argc, argv, "-apc") +aug_num) ){
+        add_cloud_ptr->clear();
+        RANSAC_cloud->clear();
+        augment_cloud->clear();
+        std::string add_filename = argv[pcl::console::find_argument(argc, argv, "-apc") +aug_num];
+        PCL_INFO ("Loading No.%d cloud to add\n",aug_num);
+        pcl::PCLPointCloud2 input_pointcloud_add;  //inpu_pointcloud2 ,new version of pcl
+        if (loadPointCloudFile(add_filename, input_pointcloud_add)){
+          PCL_ERROR ("ERROR: Could not read add point cloud %s.\n", add_filename.c_str ());
+          return (3);
+        }
+        pcl::fromPCLPointCloud2 (input_pointcloud_add, *add_cloud_ptr);
+        PCL_INFO ("Done making cloud\n");
+        noCloud = false;
+        double avp_x=0,avp_y=0,avp_z=0,avn_x=0,avn_y=0,avn_z=0;
+        for (size_t i = 0; i < add_cloud_ptr->points.size(); i++) {
+          avp_x += add_cloud_ptr->points[i].x;
+          avp_y += add_cloud_ptr->points[i].y;
+          avp_z += add_cloud_ptr->points[i].z;
+        }
+        avp_x /= double(add_cloud_ptr->points.size());
+        avp_y /= double(add_cloud_ptr->points.size());
+        avp_z /= double(add_cloud_ptr->points.size());
+        avn_x = 1;
+        avn_y = 0;
+        avn_z = 0;
+        
+        size_t AR_planar = orderVectors[ aug_num - 1 ];
+        double target_pos_x = aver_pos_x[AR_planar];
+        double target_pos_y = aver_pos_y[AR_planar];
+        double target_pos_z = aver_pos_z[AR_planar];
+        double plane_max_x = DBL_MIN;
+        double plane_max_y = DBL_MIN;
+        double plane_max_z = DBL_MIN;
+        double plane_min_x = DBL_MAX;
+        double plane_min_y = DBL_MAX;
+        double plane_min_z = DBL_MAX;
+        for(size_t i = 0; i<result_cloud_ptr->points.size();i++){
+          pcl::PointXYZRGBL theP = result_cloud_ptr->points.at(i);
+          if(theP.label == AR_planar+2){
+            if(theP.x > plane_max_x)
+              plane_max_x = theP.x;
+            if(theP.y > plane_max_y)
+              plane_max_y = theP.y;
+            if(theP.z > plane_max_z)
+              plane_max_z = theP.z;
+            if(theP.x < plane_min_x)
+              plane_min_x = theP.x;
+            if(theP.y < plane_min_y)
+              plane_min_y = theP.y;
+            if(theP.z < plane_min_z)
+              plane_min_z = theP.z;
+            pcl::PointXYZRGB newP;
+            newP.x = theP.x;
+            newP.y = theP.y;
+            newP.z = theP.z;
+            newP.r = theP.r;
+            newP.g = theP.g;
+            newP.b = theP.b;
+            RANSAC_cloud->push_back(newP);
+          }
+        }
+        double plane_variance = pow( pow(plane_max_x - plane_min_x,2.)+pow(plane_max_y - plane_min_y,2.)+pow(plane_max_z - plane_min_z,2.) , 0.5);
+        scaleAddCloud(add_cloud_ptr,plane_variance,0.45);
+
+        pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+        pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+        // Create the segmentation object
+        pcl::SACSegmentation<pcl::PointXYZRGB> seg;
+        // Optional
+        seg.setOptimizeCoefficients (true);
+        // Mandatory
+        seg.setModelType (pcl::SACMODEL_PLANE);
+        seg.setMethodType (pcl::SAC_RANSAC);
+        seg.setDistanceThreshold (ransacThreshold);
+  
+        seg.setInputCloud (RANSAC_cloud);
+        seg.segment (*inliers, *coefficients);
+  
+        if (inliers->indices.size () == 0)
+          PCL_ERROR ("Could not estimate a planar model for the given dataset.");
+  
+        double target_nor_x = coefficients->values[0];
+        double target_nor_y = coefficients->values[1];
+        double target_nor_z = coefficients->values[2];
+        std::cout<<"nor: "<<target_nor_x<<" "<<target_nor_y<<" "<<target_nor_z<<endl;
+    
+        Eigen::Affine3f trans_matrix = Eigen::Affine3f::Identity();
+        // Define a translation of 2.5 meters on the x axis.(x,y,z)
+        trans_matrix.translation() << target_pos_x - avp_x + 0.8, target_pos_y - avp_y, target_pos_z - avp_z;
+  
+        double alpha = acos( (target_nor_y*avn_y + target_nor_z*avn_z) /sqrt(target_nor_y*target_nor_y + target_nor_z*target_nor_z) );
+        double beta = acos( (target_nor_z*avn_z + target_nor_x*avn_x)/sqrt(target_nor_x*target_nor_x + target_nor_z*target_nor_z) );
+        double gamma = acos( (target_nor_y*avn_y + target_nor_x*avn_x) /sqrt(target_nor_y*target_nor_y + target_nor_x*target_nor_x) );
+  
+        trans_matrix.rotate ( Eigen::AngleAxisf (gamma, Eigen::Vector3f::UnitZ()) * Eigen::AngleAxisf (beta, Eigen::Vector3f::UnitY()));
+  
+        // Print the transformation
+        printf ("\nUsing an Affine3f derive trans_matrix:\n");
+        std::cout << trans_matrix.matrix() << std::endl;
+  
+        pcl::transformPointCloud(*add_cloud_ptr, *augment_cloud, trans_matrix);
+        //replaceRGB
+        std::cerr<<"plane point:"<<RANSAC_cloud->points.size()<<", with "<<augment_cloud->points.size()<<endl;
+        //replaceRGB_AR(augment_cloud,result_cloud_ptr,AR_planar);
+        for(size_t i =0; i<augment_cloud->points.size();i++){
+            pcl::PointXYZRGB theP = augment_cloud->points.at(i);
+            pcl::PointXYZRGB newP;
+            newP.x = theP.x;
+            newP.y = theP.y;
+            newP.z = theP.z;
+            newP.r = theP.r;
+            newP.g = theP.g;
+            newP.b = theP.b;
+            rgb_cloud_ptr->points.push_back(newP);
+        }
+      }
+      else
+        break;
+      
+      aug_num++;
+    }
+    if(noCloud == true){
+      PCL_ERROR ("ERROR: No input cloud");
       return (3);
     }
-    pcl::fromPCLPointCloud2 (input_pointcloud_add, *add_cloud_ptr);
-    PCL_INFO ("Done making cloud\n");
-
-    pcl::PCLPointCloud2 input_pointcloud_add2;  //inpu_pointcloud2 ,new version of pcl
-    if (loadPointCloudFile(add_filename2, input_pointcloud_add2))
-    {
-      PCL_ERROR ("ERROR: Could not read add point cloud %s.\n", add_filename2.c_str ());
-      return (3);
-    }
-    pcl::fromPCLPointCloud2 (input_pointcloud_add2, *add_cloud_ptr2);
-    PCL_INFO ("Done making cloud\n");
-
-    pcl::PCLPointCloud2 input_pointcloud_add3;  //inpu_pointcloud2 ,new version of pcl
-    if (loadPointCloudFile(add_filename3, input_pointcloud_add3))
-    {
-      PCL_ERROR ("ERROR: Could not read add point cloud %s.\n", add_filename3.c_str ());
-      return (3);
-    }
-    pcl::fromPCLPointCloud2 (input_pointcloud_add3, *add_cloud_ptr3);
-    PCL_INFO ("Done making cloud\n");
-
-    //===== transformation =====
-    avp_x=0;avp_y=0;avp_z=0;avn_x=0;avn_y=0;avn_z=0;
-    for (size_t i = 0; i < add_cloud_ptr->points.size(); i++) {
-      avp_x += add_cloud_ptr->points[i].x;
-      avp_y += add_cloud_ptr->points[i].y;
-      avp_z += add_cloud_ptr->points[i].z;
-    }
-    avp_x /= double(add_cloud_ptr->points.size());
-    avp_y /= double(add_cloud_ptr->points.size());
-    avp_z /= double(add_cloud_ptr->points.size());
-    avn_x = 1;
-    avn_y = 0;
-    avn_z = 0;
-    
-    size_t AR_planar = orderVectors[0];
-    double target_pos_x = aver_pos_x[AR_planar];
-    double target_pos_y = aver_pos_y[AR_planar];
-    double target_pos_z = aver_pos_z[AR_planar];
-    double plane_max_x = DBL_MIN;
-    double plane_max_y = DBL_MIN;
-    double plane_max_z = DBL_MIN;
-    double plane_min_x = DBL_MAX;
-    double plane_min_y = DBL_MAX;
-    double plane_min_z = DBL_MAX;
-    for(size_t i = 0; i<result_cloud_ptr->points.size();i++){
-      pcl::PointXYZRGBL theP = result_cloud_ptr->points.at(i);
-      if(theP.label == AR_planar+2){
-        if(theP.x > plane_max_x)
-          plane_max_x = theP.x;
-        if(theP.y > plane_max_y)
-          plane_max_y = theP.y;
-        if(theP.z > plane_max_z)
-          plane_max_z = theP.z;
-        if(theP.x < plane_min_x)
-          plane_min_x = theP.x;
-        if(theP.y < plane_min_y)
-          plane_min_y = theP.y;
-        if(theP.z < plane_min_z)
-          plane_min_z = theP.z;
-        pcl::PointXYZRGB newP;
-        newP.x = theP.x;
-        newP.y = theP.y;
-        newP.z = theP.z;
-        newP.r = theP.r;
-        newP.g = theP.g;
-        newP.b = theP.b;
-        RANSAC_cloud->push_back(newP);
-      }
-    }
-    double plane_variance = pow( pow(plane_max_x - plane_min_x,2.)+pow(plane_max_y - plane_min_y,2.)+pow(plane_max_z - plane_min_z,2.) , 0.5);
-    scaleAddCloud(add_cloud_ptr,plane_variance,0.45);
-
-    pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-    pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-    // Create the segmentation object
-    pcl::SACSegmentation<pcl::PointXYZRGB> seg;
-    // Optional
-    seg.setOptimizeCoefficients (true);
-    // Mandatory
-    seg.setModelType (pcl::SACMODEL_PLANE);
-    seg.setMethodType (pcl::SAC_RANSAC);
-    seg.setDistanceThreshold (ransacThreshold);
-  
-    seg.setInputCloud (RANSAC_cloud);
-    seg.segment (*inliers, *coefficients);
-  
-    if (inliers->indices.size () == 0)
-        PCL_ERROR ("Could not estimate a planar model for the given dataset.");
-  
-    double target_nor_x = coefficients->values[0];
-    double target_nor_y = coefficients->values[1];
-    double target_nor_z = coefficients->values[2];
-    std::cout<<"nor: "<<target_nor_x<<" "<<target_nor_y<<" "<<target_nor_z<<endl;
-
-    
-    Eigen::Affine3f trans_matrix = Eigen::Affine3f::Identity();
-    // Define a translation of 2.5 meters on the x axis.(x,y,z)
-    trans_matrix.translation() << target_pos_x - avp_x + 0.8, target_pos_y - avp_y, target_pos_z - avp_z;
-  
-    double alpha = acos( (target_nor_y*avn_y + target_nor_z*avn_z) /sqrt(target_nor_y*target_nor_y + target_nor_z*target_nor_z) );
-    double beta = acos( (target_nor_z*avn_z + target_nor_x*avn_x)/sqrt(target_nor_x*target_nor_x + target_nor_z*target_nor_z) );
-    double gamma = acos( (target_nor_y*avn_y + target_nor_x*avn_x) /sqrt(target_nor_y*target_nor_y + target_nor_x*target_nor_x) );
-    //float gamma = acos( (target_nor_x*avn_x + target_nor_y*avn_y)/sqrt(target_nor_x*target_nor_x + target_nor_y*target_nor_y) );
-    //std::cout<<alpha<<","<<beta<<"  ;"<<mean<<endl;
-  
-    trans_matrix.rotate ( Eigen::AngleAxisf (alpha, Eigen::Vector3f::UnitX()) * Eigen::AngleAxisf (beta, Eigen::Vector3f::UnitY()));//* Eigen::AngleAxisf (gamma, Eigen::Vector3f::UnitZ()) );
-  
-    // Print the transformation
-    printf ("\nUsing an Affine3f derive trans_matrix:\n");
-    std::cout << trans_matrix.matrix() << std::endl;
-  
-    pcl::transformPointCloud(*add_cloud_ptr, *augment_cloud, trans_matrix);
-    //replaceRGB
-    std::cerr<<"plane point:"<<RANSAC_cloud->points.size()<<", with "<<augment_cloud->points.size()<<endl;
-    //replaceRGB_AR(augment_cloud,result_cloud_ptr,AR_planar);
-    
-    // ======================= second =========================
-    AR_planar = orderVectors[1];
-    target_pos_x = aver_pos_x[AR_planar];
-    target_pos_y = aver_pos_y[AR_planar];
-    target_pos_z = aver_pos_z[AR_planar];
-    plane_max_x = DBL_MIN;
-    plane_max_y = DBL_MIN;
-    plane_max_z = DBL_MIN;
-    plane_min_x = DBL_MAX;
-    plane_min_y = DBL_MAX;
-    plane_min_z = DBL_MAX;
-    for(size_t i = 0; i<result_cloud_ptr->points.size();i++){
-      pcl::PointXYZRGBL theP = result_cloud_ptr->points.at(i);
-      if(theP.label == AR_planar+2){
-        pcl::PointXYZRGB newP;
-        if(theP.x > plane_max_x)
-          plane_max_x = theP.x;
-        if(theP.y > plane_max_y)
-          plane_max_y = theP.y;
-        if(theP.z > plane_max_z)
-          plane_max_z = theP.z;
-        if(theP.x < plane_min_x)
-          plane_min_x = theP.x;
-        if(theP.y < plane_min_y)
-          plane_min_y = theP.y;
-        if(theP.z < plane_min_z)
-          plane_min_z = theP.z;
-        newP.x = theP.x;
-        newP.y = theP.y;
-        newP.z = theP.z;
-        newP.r = theP.r;
-        newP.g = theP.g;
-        newP.b = theP.b;
-        RANSAC_cloud2->push_back(newP);
-      }
-    }
-    plane_variance = pow( pow(plane_max_x - plane_min_x,2.)+pow(plane_max_y - plane_min_y,2.)+pow(plane_max_z - plane_min_z,2.) , 0.5);
-    scaleAddCloud(add_cloud_ptr2,plane_variance,0.6);
-
-    pcl::ModelCoefficients::Ptr coefficients2 (new pcl::ModelCoefficients);
-    pcl::PointIndices::Ptr inliers2 (new pcl::PointIndices);
-    // Create the segmentation object
-    pcl::SACSegmentation<pcl::PointXYZRGB> seg2;
-    // Optional
-    seg2.setOptimizeCoefficients (true);
-    // Mandatory
-    seg2.setModelType (pcl::SACMODEL_PLANE);
-    seg2.setMethodType (pcl::SAC_RANSAC);
-    seg2.setDistanceThreshold (ransacThreshold);
-  
-    seg2.setInputCloud (RANSAC_cloud2);
-    seg2.segment (*inliers2, *coefficients2);
-  
-    if (inliers2->indices.size () == 0)
-        PCL_ERROR ("Could not estimate a planar model for the given dataset.");
-  
-    target_nor_x = coefficients2->values[0];
-    target_nor_y = coefficients2->values[1];
-    target_nor_z = coefficients2->values[2];
-    std::cout<<"nor: "<<target_nor_x<<" "<<target_nor_y<<" "<<target_nor_z<<endl;
-    
-    Eigen::Affine3f trans_matrix2 = Eigen::Affine3f::Identity();
-    // Define a translation of 2.5 meters on the x axis.(x,y,z)
-    trans_matrix2.translation() << target_pos_x - avp_x + 0.12, target_pos_y - avp_y, target_pos_z - avp_z;
-
-    avn_x = 0;
-    avn_y = 0;
-    avn_z = 1;
-  
-    alpha = acos( (target_nor_y*avn_y + target_nor_z*avn_z) /sqrt(target_nor_y*target_nor_y + target_nor_z*target_nor_z) );
-    beta = acos( (target_nor_z*avn_z + target_nor_x*avn_x)/sqrt(target_nor_x*target_nor_x + target_nor_z*target_nor_z) );
-    gamma = acos( (target_nor_y*avn_y + target_nor_x*avn_x) /sqrt(target_nor_y*target_nor_y + target_nor_x*target_nor_x) );
-    //float gamma = acos( (target_nor_x*avn_x + target_nor_y*avn_y)/sqrt(target_nor_x*target_nor_x + target_nor_y*target_nor_y) );
-    //std::cout<<alpha<<","<<beta<<"  ;"<<mean<<endl;
-  
-    trans_matrix2.rotate ( Eigen::AngleAxisf (alpha, Eigen::Vector3f::UnitX()) * Eigen::AngleAxisf (beta, Eigen::Vector3f::UnitY())*Eigen::AngleAxisf(-2.0,Eigen::Vector3f::UnitZ()) );//* Eigen::AngleAxisf (gamma, Eigen::Vector3f::UnitZ()) );
-  
-    // Print the transformation
-    printf ("\nUsing an Affine3f derive trans_matrix:\n");
-    std::cout << trans_matrix2.matrix() << std::endl;
-  
-    pcl::transformPointCloud(*add_cloud_ptr2, *augment_cloud2, trans_matrix2);
-
-    //replaceRGB
-    std::cerr<<"Total point:"<<augment_cloud2->points.size()<<", fitting "<<RANSAC_cloud2->points.size()<<endl;
-    //replaceRGB_AR(augment_cloud2,result_cloud_ptr,AR_planar);
-
-    // ======================= third =========================
-    AR_planar = orderVectors[2];
-    target_pos_x = aver_pos_x[AR_planar];
-    target_pos_y = aver_pos_y[AR_planar];
-    target_pos_z = aver_pos_z[AR_planar];
-    plane_max_x = DBL_MIN;
-    plane_max_y = DBL_MIN;
-    plane_max_z = DBL_MIN;
-    plane_min_x = DBL_MAX;
-    plane_min_y = DBL_MAX;
-    plane_min_z = DBL_MAX;
-    for(size_t i = 0; i<result_cloud_ptr->points.size();i++){
-      pcl::PointXYZRGBL theP = result_cloud_ptr->points.at(i);
-      if(theP.label == AR_planar+2){
-        if(theP.x > plane_max_x)
-          plane_max_x = theP.x;
-        if(theP.y > plane_max_y)
-          plane_max_y = theP.y;
-        if(theP.z > plane_max_z)
-          plane_max_z = theP.z;
-        if(theP.x < plane_min_x)
-          plane_min_x = theP.x;
-        if(theP.y < plane_min_y)
-          plane_min_y = theP.y;
-        if(theP.z < plane_min_z)
-          plane_min_z = theP.z;
-        pcl::PointXYZRGB newP;
-        newP.x = theP.x;
-        newP.y = theP.y;
-        newP.z = theP.z;
-        newP.r = theP.r;
-        newP.g = theP.g;
-        newP.b = theP.b;
-        RANSAC_cloud3->push_back(newP);
-      }
-    }
-    plane_variance = pow( pow(plane_max_x - plane_min_x,2.)+pow(plane_max_y - plane_min_y,2.)+pow(plane_max_z - plane_min_z,2.) , 0.5);
-    scaleAddCloud(add_cloud_ptr3,plane_variance,0.7);
-
-    pcl::ModelCoefficients::Ptr coefficients3 (new pcl::ModelCoefficients);
-    pcl::PointIndices::Ptr inliers3 (new pcl::PointIndices);
-    // Create the segmentation object
-    pcl::SACSegmentation<pcl::PointXYZRGB> seg3;
-    // Optional
-    seg3.setOptimizeCoefficients (true);
-    // Mandatory
-    seg3.setModelType (pcl::SACMODEL_PLANE);
-    seg3.setMethodType (pcl::SAC_RANSAC);
-    seg3.setDistanceThreshold (ransacThreshold);
-  
-    seg3.setInputCloud (RANSAC_cloud3);
-    seg3.segment (*inliers3, *coefficients3);
-  
-    if (inliers3->indices.size () == 0)
-        PCL_ERROR ("Could not estimate a planar model for the given dataset.");
-  
-    target_nor_x = coefficients3->values[0];
-    target_nor_y = coefficients3->values[1];
-    target_nor_z = coefficients3->values[2];
-    std::cout<<"nor: "<<target_nor_x<<" "<<target_nor_y<<" "<<target_nor_z<<endl;
-
-    avn_x = 1;
-    avn_y = 0;
-    avn_z = 0;
-    
-    Eigen::Affine3f trans_matrix3 = Eigen::Affine3f::Identity();
-    // Define a translation of 2.5 meters on the x axis.(x,y,z)
-    trans_matrix3.translation() << target_pos_x - avp_x+0.06, target_pos_y - avp_y, target_pos_z - avp_z;
-  
-    alpha = acos( (target_nor_y*avn_y + target_nor_z*avn_z) /sqrt(target_nor_y*target_nor_y + target_nor_z*target_nor_z) );
-    beta = acos( (target_nor_z*avn_z + target_nor_x*avn_x)/sqrt(target_nor_x*target_nor_x + target_nor_z*target_nor_z) );
-    gamma = acos( (target_nor_y*avn_y + target_nor_x*avn_x) /sqrt(target_nor_y*target_nor_y + target_nor_x*target_nor_x) );
-    //float gamma = acos( (target_nor_x*avn_x + target_nor_y*avn_y)/sqrt(target_nor_x*target_nor_x + target_nor_y*target_nor_y) );
-    //std::cout<<alpha<<","<<beta<<"  ;"<<mean<<endl;
-  
-    trans_matrix3.rotate ( Eigen::AngleAxisf (alpha, Eigen::Vector3f::UnitX()) * Eigen::AngleAxisf (beta, Eigen::Vector3f::UnitY()) );//* Eigen::AngleAxisf (gamma, Eigen::Vector3f::UnitZ()) );
-  
-    // Print the transformation
-    printf ("\nUsing an Affine3f derive trans_matrix:\n");
-    std::cout << trans_matrix3.matrix() << std::endl;
-  
-    pcl::transformPointCloud(*add_cloud_ptr3, *augment_cloud3, trans_matrix3);
-
-    //replaceRGB
-    std::cerr<<"Total point:"<<augment_cloud3->points.size()<<", fitting "<<RANSAC_cloud3->points.size()<<endl;
-    //replaceRGB_AR(augment_cloud3,result_cloud_ptr,AR_planar);
-
-    for(size_t i =0; i<augment_cloud->points.size();i++){
-        pcl::PointXYZRGB theP = augment_cloud->points.at(i);
-        pcl::PointXYZRGB newP;
-        newP.x = theP.x;
-        newP.y = theP.y;
-        newP.z = theP.z;
-        newP.r = theP.r;
-        newP.g = theP.g;
-        newP.b = theP.b;
-        rgb_cloud_ptr->points.push_back(newP);
-      }
-      for(size_t i =0; i<augment_cloud2->points.size();i++){
-        pcl::PointXYZRGB theP = augment_cloud2->points.at(i);
-        pcl::PointXYZRGB newP;
-        newP.x = theP.x;
-        newP.y = theP.y;
-        newP.z = theP.z;
-        newP.r = theP.r;
-        newP.g = theP.g;
-        newP.b = theP.b;
-        rgb_cloud_ptr->points.push_back(newP);
-      }
-      for(size_t i =0; i<augment_cloud3->points.size();i++){
-        pcl::PointXYZRGB theP = augment_cloud3->points.at(i);
-        pcl::PointXYZRGB newP;
-        newP.x = theP.x;
-        newP.y = theP.y;
-        newP.z = theP.z;
-        newP.r = theP.r;
-        newP.g = theP.g;
-        newP.b = theP.b;
-        rgb_cloud_ptr->points.push_back(newP);
-      }
-
   }
 
   /// -----------------------------------|  Visualization  |-----------------------------------
@@ -909,65 +695,14 @@ main (int argc,
   {
     pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
     viewer->setBackgroundColor (0, 0, 0);
-    viewer->addPointCloud (mpss_labeled_cloud, "maincloud");
-    // uncomment below to see the original augmenting cloud!
-    /*if (aug_pc){ 
-      viewer->addPointCloud (augment_cloud, "augment_cloud");
-      viewer->addPointCloud (augment_cloud2, "augment_cloud2");
-      viewer->addPointCloud (augment_cloud3, "augment_cloud3");
-    }*/
+    if (aug_pc)
+      viewer->addPointCloud (rgb_cloud_ptr, "augmentation cloud");
+    else
+      viewer->addPointCloud (mpss_labeled_cloud, "maincloud");
     /// Visualization Loop
     PCL_INFO ("Loading viewer\n");
     while (!viewer->wasStopped ()){
       viewer->spinOnce (100);
-    }
-    //self-design to show supervoxel cloud (deprecated from command line)
-      if(show_svcloud){
-      boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer_sup (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-      viewer_sup->setBackgroundColor (0, 0, 0);
-
-      PointCloudT::Ptr voxel_centroid_cloud = super.getVoxelCentroidCloud ();
-      viewer_sup->addPointCloud (voxel_centroid_cloud, "voxel centroids");
-      viewer_sup->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE,2.0, "voxel centroids");
-      viewer_sup->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_OPACITY,0.95, "voxel centroids");
-
-      PointLCloudT::Ptr labeled_voxel_cloud = super.getLabeledVoxelCloud ();
-      viewer_sup->addPointCloud (labeled_voxel_cloud, "labeled voxels");
-      viewer_sup->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_OPACITY,0.8, "labeled voxels");
-      //Normal visulizer
-      //PointNCloudT::Ptr sv_normal_cloud = super.makeSupervoxelNormalCloud (supervoxel_clusters);
-      //viewer_sup->addPointCloudNormals<pcl::PointNormal> (sv_normal_cloud,1,0.05f, "supervoxel_normals");
-
-      std::multimap<uint32_t,uint32_t>::iterator label_itr = supervoxel_adjacency.begin ();
-      for ( ; label_itr != supervoxel_adjacency.end (); )
-      {
-        //First get the label
-        uint32_t supervoxel_label = label_itr->first;
-        //Now get the supervoxel corresponding to the label
-        pcl::Supervoxel<PointT>::Ptr supervoxel = supervoxel_clusters.at (supervoxel_label);
-
-        //Now we need to iterate through the adjacent supervoxels and make a point cloud of them
-        PointCloudT adjacent_supervoxel_centers;
-        std::multimap<uint32_t,uint32_t>::iterator adjacent_itr = supervoxel_adjacency.equal_range (supervoxel_label).first;
-        for ( ; adjacent_itr!=supervoxel_adjacency.equal_range (supervoxel_label).second; ++adjacent_itr)
-        {
-          pcl::Supervoxel<PointT>::Ptr neighbor_supervoxel = supervoxel_clusters.at (adjacent_itr->second);
-          adjacent_supervoxel_centers.push_back (neighbor_supervoxel->centroid_);
-        }
-        //Now we make a name for this polygon
-        std::stringstream ss;
-        ss << "supervoxel_" << supervoxel_label;
-        //This function is shown below, but is beyond the scope of this tutorial - basically it just generates a "star" polygon mesh from the points given
-        addSupervoxelConnectionsToViewer (supervoxel->centroid_, adjacent_supervoxel_centers, ss.str (), viewer_sup);
-        //Move iterator forward to next label
-        label_itr = supervoxel_adjacency.upper_bound (supervoxel_label);
-      }
-
-      while (!viewer_sup->wasStopped ())
-      {
-      viewer_sup->spinOnce (100);
-      }
-
     }
   }
 
