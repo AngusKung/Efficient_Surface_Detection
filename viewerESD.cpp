@@ -1,3 +1,9 @@
+/*
+- Efforts of Yen-Cheng Kung
+- Please cite the paper "Efficient Surface Detection for Augmented Reality on 3D Point Clouds" if you use this code.
+- Paper can be found at : http://dl.acm.org/citation.cfm?id=2949058
+*/
+
 #include <cstdlib>
 #include <climits>
 #include <cmath>
@@ -36,7 +42,7 @@
 #include <vtkImageFlip.h>
 #include <vtkPolyLine.h>
 
- //planar segmentation
+//planar segmentation
 #include <pcl/ModelCoefficients.h>
 #include <pcl/point_types.h>
 #include <pcl/sample_consensus/method_types.h>
@@ -49,8 +55,8 @@ bool loadPointCloudFile(const string& fileName, pcl::PCLPointCloud2& pointCloud)
 
 int main(int argc, char ** argv){
 	if (argc == 1) {
-    PCL_INFO("Usage: ./newPlanarRefinements [input_point_cloud]\n");
-    PCL_INFO("  Ex:  ./newPlanarRefinements result/30_xyzrgbl.ply\n");
+    PCL_INFO("Usage: ./viewerESD [input_point_cloud]\n");
+    PCL_INFO("  Ex:  ./viewerESD result/30_xyzrgbl.ply\n");
     PCL_INFO("Notice:\n");
     PCL_INFO("  [input_point_cloud] supports only  the output of MPSS (format: pcl::PointXYZRGBL)\n");
     return false;
@@ -60,7 +66,7 @@ int main(int argc, char ** argv){
   string pcd_filename = argv[1];
   PCL_INFO ("Loading pointcloud\n");
   
-  /// check if the provided pcd file contains normals
+  //----- check if the provided pcd file contains normals -----
   pcl::PCLPointCloud2 input_pointcloud;  //inpu_pointcloud2 ,new version of pcl
   if (loadPointCloudFile(pcd_filename, input_pointcloud))
   {
@@ -70,6 +76,7 @@ int main(int argc, char ** argv){
   pcl::fromPCLPointCloud2 (input_pointcloud, *input_cloud_ptr);
   PCL_INFO ("Done making cloud\n");
 
+  //----- viewer for curvature -----
   /*pcl::PointCloud<pcl::PointXYZRGB>::Ptr show_result_ptr (new pcl::PointCloud<pcl::PointXYZRGB>);
   for(size_t i = 0; i <input_cloud_ptr->points.size();i++){
     pcl::PointXYZRGB showP;
@@ -98,7 +105,7 @@ int main(int argc, char ** argv){
   pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
   viewer->setBackgroundColor (0, 0, 0);
   viewer->addPointCloud (show_result_ptr, "maincloud");
-  /// Visualization Loop
+  //----- Visualization Loop -----
   PCL_INFO ("Loading viewer\n");
   while (!viewer->wasStopped ()){
     viewer->spinOnce (100);

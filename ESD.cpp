@@ -93,7 +93,7 @@
 #define CURVATURE UINT32_MAX
 #define PLANE 0
 
-// brief of frequent usage
+//----- brief of frequent usage -----
 typedef pcl::PointXYZRGBA PointT;  // The point type used for input
 typedef pcl::PointCloud<PointT> PointCloudT; // used when showing supervoxel 
 typedef pcl::PointNormal PointNT;

@@ -1,3 +1,8 @@
+/*
+- Efforts of Yen-Cheng Kung
+- Please cite the paper "Efficient Surface Detection for Augmented Reality on 3D Point Clouds" if you use this code.
+- Paper can be found at : http://dl.acm.org/citation.cfm?id=2949058
+*/
 #include <cstdlib>
 #include <cmath>
 #include <climits>
@@ -51,11 +56,11 @@ bool loadPointCloudFile(const string& fileName, pcl::PCLPointCloud2& pointCloud)
 size_t findLabel(uint32_t la, pcl::PointCloud<pcl::PointXYZRGBL>::Ptr cloud_ptr);
 
 int main(int argc, char ** argv){
-	if (argc == 1) {
-    PCL_INFO("Usage: ./newPlanarRefinements [old_pc] [old_info] [2add_pc] [2add_info] [output_pc] [output_info] (-sr)\n");
-    PCL_INFO("  Ex:  ./newPlanarRefinements 30_xyzrgbl.ply 30_POS_NORM_VARs.txt 40_xyzrgbl.ply 40_POS_NORM_VARs.txt 30+40_xyzrgbl.ply 30+40_POS_NORM_VARs.txt -sr\n");
+  if (argc == 1) {
+    PCL_INFO("Usage: ./extraPlanarRefinements [old_pc] [old_info] [2add_pc] [2add_info] [output_pc] [output_info] (-sr)\n");
+    PCL_INFO("  Ex:  ./extraPlanarRefinements 30_xyzrgbl.ply 30_POS_NORM_VARs.txt 40_xyzrgbl.ply 40_POS_NORM_VARs.txt 30+40_xyzrgbl.ply 30+40_POS_NORM_VARs.txt -sr\n");
     PCL_INFO("Notice:\n");
-    PCL_INFO("  [old_pc],[2add_pc] supports only  the output of MPSS (format: pcl::PointXYZRGB)\n");
+    PCL_INFO("  [old_pc],[2add_pc] supports only  the output of ESD (format: pcl::PointXYZRGBL)\n");
     PCL_INFO("  [old_info] needs to be align to same file as [old_pc]\n");
     PCL_INFO("  [2add_info] also needs to be align to same file as [2add_pc]\n");
     PCL_INFO("  -sr: show result\n");
@@ -110,11 +115,11 @@ int main(int argc, char ** argv){
   else
     PCL_INFO("Done reading cloud & info\n");
 
-  // ================= Read second file ====================
+  //----- Read second file -----
   string pcd_filename2 = argv[3];
   PCL_INFO ("Loading pointcloud\n");
   
-  /// check if the provided pcd file contains normals
+  //----- check if the provided pcd file contains normals -----
   pcl::PCLPointCloud2 input_pointcloud2;  //inpu_pointcloud2 ,new version of pcl
   if (loadPointCloudFile(pcd_filename2, input_pointcloud2))
   {
@@ -145,8 +150,8 @@ int main(int argc, char ** argv){
   }
   else
     PCL_INFO("Done reading cloud & info\n");
-  //cout<<txtVectors2.size()<<endl;
-  // ================ processing ==================
+  
+  //----- processing -----
   pcl::PointCloud<pcl::PointXYZRGBL>::Ptr result_cloud_ptr (new pcl::PointCloud<pcl::PointXYZRGBL>);
   result_cloud_ptr = input_cloud_ptr1;
   vector< vector<float> > resultVectors = txtVectors1;
