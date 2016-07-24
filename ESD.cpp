@@ -567,7 +567,7 @@ main (int argc,
         RANSAC_cloud->clear();
         augment_cloud->clear();
         std::string add_filename = argv[pcl::console::find_argument(argc, argv, "-apc") +aug_num];
-        PCL_INFO ("Loading No.%d cloud to add\n",aug_num);
+        PCL_INFO ("\nLoading No.%d cloud to add\n",aug_num);
         pcl::PCLPointCloud2 input_pointcloud_add;  //inpu_pointcloud2 ,new version of pcl
         if (loadPointCloudFile(add_filename, input_pointcloud_add)){
           PCL_ERROR ("ERROR: Could not read add point cloud %s.\n", add_filename.c_str ());
@@ -647,20 +647,19 @@ main (int argc,
         double target_nor_x = coefficients->values[0];
         double target_nor_y = coefficients->values[1];
         double target_nor_z = coefficients->values[2];
-        std::cout<<"nor: "<<target_nor_x<<" "<<target_nor_y<<" "<<target_nor_z<<endl;
     
         Eigen::Affine3f trans_matrix = Eigen::Affine3f::Identity();
         // Define a translation of 2.5 meters on the x axis.(x,y,z)
-        trans_matrix.translation() << target_pos_x - avp_x + 0.8, target_pos_y - avp_y, target_pos_z - avp_z;
+        trans_matrix.translation() << target_pos_x - avp_x , target_pos_y - avp_y, target_pos_z - avp_z;
   
         double alpha = acos( (target_nor_y*avn_y + target_nor_z*avn_z) /sqrt(target_nor_y*target_nor_y + target_nor_z*target_nor_z) );
         double beta = acos( (target_nor_z*avn_z + target_nor_x*avn_x)/sqrt(target_nor_x*target_nor_x + target_nor_z*target_nor_z) );
         double gamma = acos( (target_nor_y*avn_y + target_nor_x*avn_x) /sqrt(target_nor_y*target_nor_y + target_nor_x*target_nor_x) );
-  
-        trans_matrix.rotate ( Eigen::AngleAxisf (gamma, Eigen::Vector3f::UnitZ()) * Eigen::AngleAxisf (beta, Eigen::Vector3f::UnitY()));
+        std::cerr<<alpha<<", "<<beta<<", "<<gamma<<endl; 
+        trans_matrix.rotate ( Eigen::AngleAxisf (alpha, Eigen::Vector3f::UnitX()) * Eigen::AngleAxisf (beta, Eigen::Vector3f::UnitY()) * Eigen::AngleAxisf (gamma, Eigen::Vector3f::UnitZ()) );
   
         // Print the transformation
-        printf ("\nUsing an Affine3f derive trans_matrix:\n");
+        printf ("Using an Affine3f derive trans_matrix:\n");
         std::cout << trans_matrix.matrix() << std::endl;
   
         pcl::transformPointCloud(*add_cloud_ptr, *augment_cloud, trans_matrix);
@@ -710,10 +709,7 @@ main (int argc,
 
 }  /// END main
 
-
-
-/// -------------------------| Definitions of helper functions|-------------------------
-
+//----- useful for visualization of supervoxel adjacencies, not yet used in main -----
 void
 addSupervoxelConnectionsToViewer (PointT &supervoxel_center,
                                   PointCloudT &adjacent_supervoxel_centers,
@@ -755,6 +751,7 @@ savePCDfile(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, const char* fileName)
 void
 findNeighbor(std::vector<uint32_t>& plane,const uint32_t& the_cluster_num, double& the_normal_x, double& the_normal_y, double& the_normal_z)
 {
+  clusters_used.find(the_cluster_num)->second = true;
   plane.push_back(the_cluster_num);
   int the_cluster_int = clusters_int.find(the_cluster_num)->second;
   ::avn_x += normal_vector_x[the_cluster_int];
@@ -774,7 +771,6 @@ findNeighbor(std::vector<uint32_t>& plane,const uint32_t& the_cluster_num, doubl
     //double adj_parrallel_threshold = parrallel_threshold * (1+(pos_z[neighbor_cluster_int] - min_z));
     if(the_normal_x * normal_vector_x[neighbor_cluster_int] + the_normal_y * normal_vector_y[neighbor_cluster_int] +
         the_normal_z * normal_vector_z[neighbor_cluster_int] > parrallel_threshold && clusters_used.find(neighbor_cluster)->second == false){
-      clusters_used.find(neighbor_cluster)->second = true;
       the_normal_x = (1-mu)*the_normal_x+mu*normal_vector_x[neighbor_cluster_int];
       the_normal_y = (1-mu)*the_normal_y+mu*normal_vector_y[neighbor_cluster_int];
       the_normal_z = (1-mu)*the_normal_z+mu*normal_vector_z[neighbor_cluster_int];
@@ -843,6 +839,7 @@ scaleAddCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr add_cloud_ptr, double plane
   }
 }
 
+//----- Dumb way to replace RGB of the nearest point -----
 void
 replaceRGB_AR(pcl::PointCloud<pcl::PointXYZRGB>::Ptr augment_cloud, pcl::PointCloud<pcl::PointXYZRGBL>::Ptr result_cloud_ptr,size_t AR_planar){
   int count = 0;
@@ -855,19 +852,6 @@ replaceRGB_AR(pcl::PointCloud<pcl::PointXYZRGB>::Ptr augment_cloud, pcl::PointCl
       float new_y=0;
       float new_z=0;
       size_t j = findProjectPoint(result_cloud_ptr->points.at(i).x, result_cloud_ptr->points.at(i).y, result_cloud_ptr->points.at(i).z, augment_cloud, AR_planar+2, new_x,new_y,new_z);
-      /*if(j == SIZE_MAX){
-        //std::cerr<<"interpolate new point:"<< new_x<<new_y<<new_z;
-        pcl::PointXYZRGBL newP;
-        newP.x = new_x;
-        newP.y = new_y;
-        newP.z = new_z;
-        newP.r = augment_cloud->points.at(i).r;
-        newP.g = augment_cloud->points.at(i).g;
-        newP.b = augment_cloud->points.at(i).b;
-        newP.label = AR_planar+2;
-        result_cloud_ptr->points.push_back(newP);
-        count++;
-      }*/
       if(j == SIZE_MAX)
         continue;
       else{
@@ -895,27 +879,7 @@ findProjectPoint(float x, float y, float z, pcl::PointCloud<pcl::PointXYZRGB>::P
       min_dis = temp_dis;
       nearestP = i;
     }
-    /*if( temp_dis < min_dis){
-      min_dis2 = min_dis;
-      min_dis = temp_dis;
-      nearestP2 = nearestP;
-      nearestP = i;
-    }
-    else if(temp_dis < min_dis2){
-      min_dis2 = temp_dis;
-      nearestP2 = i;
-    }*/
   }
-  //std::cerr<<min_dis<<endl;
-  /*if(min_dis > 0.04){
-    pcl::PointXYZRGBL nearP = result_cloud_ptr->points.at(nearestP);
-    pcl::PointXYZRGBL nearP2 = result_cloud_ptr->points.at(nearestP2);
-    new_x = (nearP.x + nearP2.x)/2.;
-    new_y = (nearP.y + nearP2.y)/2.;
-    new_z = (nearP.z + nearP2.z)/2.;
-    return SIZE_MAX;
-  }
-  else*/
   if(min_dis > 0.1)
     return SIZE_MAX;
   return nearestP;
