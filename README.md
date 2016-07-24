@@ -17,11 +17,11 @@ If you use this source code, please cite the paper: "Efficient Surface Detection
 which can be found here:
 http://dl.acm.org/citation.cfm?id=2949058
 
-A few comments can be found in the codes for better understanding.<br />
+Comments can be found in the codes for better understanding.<br />
 In short,<br />
 ESD.cpp stands for Efficient Surface Detection, which include all the implementations of the paper.<br />
 viewerESD.cpp is a viewer for XYZRGBL, since PCL does not provide a viewer in this format. Useful for viewing the result after ESD.cpp. <br />
-extraPlanarRefinements.cpp allow multiple frames, ex: frames from a video, to be recombined. This file is not included in default usage and some work still need to be done.<br />
+extraPlanarRefinements.cpp allow multiple frames, ex: frames from a video, to be recombined. This file is not included in default usage and some work still need to be done.<br /><br />
 For any further question,<br />
 please feel free to contact me by "angusthefrog@gmail.com".<br />
 Or simply open an issue here is also welcome.<br />
